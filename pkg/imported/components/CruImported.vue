@@ -428,6 +428,7 @@ export default defineComponent({
     :done-route="doneRoute"
     :errors="errors"
     :validation-passed="fvFormIsValid"
+    :show-toc="true"
     @error="e=>errors=e"
     @finish="save"
   >
