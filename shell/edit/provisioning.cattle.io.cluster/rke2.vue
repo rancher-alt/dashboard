@@ -2400,6 +2400,7 @@ export default {
     :generate-yaml="generateYaml"
     class="rke2"
     component-testid="rke2-custom-create"
+    :show-toc="true"
     @done="done"
     @finish="saveOverride"
     @cancel="cancel"

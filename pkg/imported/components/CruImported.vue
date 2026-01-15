@@ -467,7 +467,7 @@ export default defineComponent({
       </div>
       <Accordion
         v-if="showBasics"
-        :title="providerTabKey || 'abc'"
+        :title="providerTabKey"
         :open-initially="true"
         class="mb-20 accordion"
       >
@@ -664,9 +664,3 @@ export default defineComponent({
     </div>
   </CruResource>
 </template>
-
-<!-- <style lang="scss" scoped>
-    .accordion {
-        border-radius: 16px;
-    }
-</style> -->
