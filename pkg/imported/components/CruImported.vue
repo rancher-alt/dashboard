@@ -141,6 +141,7 @@ export default defineComponent({
       }
       ],
       AGENT_CONFIGURATION_TYPES,
+      testAccs: [] // TODO nb remove
     };
   },
 
@@ -560,6 +561,26 @@ export default defineComponent({
           @scheduling-customization-changed="setSchedulingCustomization"
         />
       </Accordion>
+      <!-- //TODO nb remove -->
+      <button
+        class="btn role-primary"
+        @click="testAccs.push({})"
+      >
+        add accordion
+      </button><button
+        class="btn role-secondary ml-5"
+        @click="testAccs.pop()"
+      >
+        remove accordion
+      </button>
+      <Accordion
+        v-for="(acc, i) in testAccs"
+        :key="i"
+        class="mb-20 accordion"
+        :title="i.toString()"
+      >
+        {{ i }}
+      </Accordion>
       <Accordion
         class="mb-20 accordion"
         title-key="imported.accordions.labels"
@@ -637,6 +658,7 @@ export default defineComponent({
         title-key="imported.accordions.advanced"
         :open-initially="false"
       >
+        <!-- //TODO nb remove -->
         <Accordion
           v-if="!isRKE1"
           class="mb-20 accordion"
