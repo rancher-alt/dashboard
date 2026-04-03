@@ -2523,6 +2523,7 @@ export default {
               <Tab
                 v-if="!obj.remove"
                 :key="obj.id"
+                :weight="-1 * idx"
                 :name="obj.id"
                 :label="obj.pool.name || '(Not Named)'"
                 :show-header="false"
