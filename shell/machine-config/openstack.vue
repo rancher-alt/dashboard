@@ -20,6 +20,7 @@ function initOptions() {
 }
 
 export default {
+  emits:      ['validationChanged'],
   components: {
     Banner, FileSelector, Loading, LabeledInput, LabeledSelect
   },
@@ -77,10 +78,11 @@ export default {
     }
 
     let useAppCred = false;
+
     if (this.credential && this.credential.annotations) {
       useAppCred = this.credential.annotations['openstack.cattle.io/useAppCred'] === 'true';
     }
- 
+
     // Try and get the secret for the Cloud Credential as we need the plain-text password
     try {
       const id = this.credentialId.replace(':', '/');
@@ -93,18 +95,18 @@ export default {
       const applicationCredentialSecret = atob(secret.data['openstackcredentialConfig-applicationCredentialSecret']);
       const tenantName = atob(secret.data['openstackcredentialConfig-tenantName']);
       const tenantDomainName = atob(secret.data['openstackcredentialConfig-tenantDomainName']);
-      
+
       this.credObj = {
-        endpoint:   authUrl,
-        domainName: domainName,
-        username: username,
-        password:  password,
-        appCredId: applicationCredentialId,
-        appCredSecret: applicationCredentialSecret,
-        useAppCred: useAppCred,
-        projectName: tenantName,
+        endpoint:          authUrl,
+        domainName,
+        username,
+        password,
+        appCredId:         applicationCredentialId,
+        appCredSecret:     applicationCredentialSecret,
+        useAppCred,
+        projectName:       tenantName,
         projectDomainName: tenantDomainName,
-      }
+      };
       this.ready = true;
     } catch (e) {
       // this.credential = null;
@@ -112,8 +114,9 @@ export default {
     }
 
     this.authenticating = true;
-    
+
     const os = new Openstack(this.$store, this.credObj);
+
     this.os = os;
 
     // Fetch a token - if this succeeds, kick off async fetching the lists we need
@@ -145,7 +148,7 @@ export default {
     return {
       authenticating:      false,
       ready:               false,
-      credObj: {},
+      credObj:             {},
       os:                  null,
       flavors:             initOptions(),
       images:              initOptions(),
