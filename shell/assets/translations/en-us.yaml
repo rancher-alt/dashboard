@@ -1641,6 +1641,9 @@ cluster:
         fields:
           password: Password
           username: Username
+          appCredId: Application Credential ID
+          appCredSecret: Application Credential Secret
+          useAppCred: Use Application Credential
           domainName: Domain Name
           endpoint: Openstack Authentication URL
           project: Project
@@ -1648,6 +1651,8 @@ cluster:
         placeholders:
           password: ($OS_PASSWORD)
           username: ($OS_USERNAME)
+          appCredId: ($OS_APPLICATION_CREDENTIAL_ID)
+          appCredSecret: ($OS_APPLICATION_CREDENTIAL_SECRET)
           domainName: ($OS_USER_DOMAIN_NAME)
           endpoint: e.g. https://server:5000/v3 ($OS_AUTH_URL)
         errors:

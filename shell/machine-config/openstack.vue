@@ -76,29 +76,44 @@ export default {
       this.credential = null;
     }
 
+    let useAppCred = false;
+    if (this.credential && this.credential.annotations) {
+      useAppCred = this.credential.annotations['openstack.cattle.io/useAppCred'] === 'true';
+    }
+ 
     // Try and get the secret for the Cloud Credential as we need the plain-text password
     try {
       const id = this.credentialId.replace(':', '/');
       const secret = await this.$store.dispatch('management/find', { type: SECRET, id });
-      const data = secret.data['openstackcredentialConfig-password'];
-      const password = atob(data);
-
-      this.password = password;
-      this.havePassword = true;
+      const authUrl = atob(secret.data['openstackcredentialConfig-authUrl']);
+      const domainName = atob(secret.data['openstackcredentialConfig-domainName']);
+      const username = atob(secret.data['openstackcredentialConfig-username']);
+      const password = atob(secret.data['openstackcredentialConfig-password']);
+      const applicationCredentialId = atob(secret.data['openstackcredentialConfig-applicationCredentialId']);
+      const applicationCredentialSecret = atob(secret.data['openstackcredentialConfig-applicationCredentialSecret']);
+      const tenantName = atob(secret.data['openstackcredentialConfig-tenantName']);
+      const tenantDomainName = atob(secret.data['openstackcredentialConfig-tenantDomainName']);
+      
+      this.credObj = {
+        endpoint:   authUrl,
+        domainName: domainName,
+        username: username,
+        password:  password,
+        appCredId: applicationCredentialId,
+        appCredSecret: applicationCredentialSecret,
+        useAppCred: useAppCred,
+        projectName: tenantName,
+        projectDomainName: tenantDomainName,
+      }
       this.ready = true;
     } catch (e) {
       // this.credential = null;
-      this.password = '';
-      this.havePassword = false;
       console.error(e); // eslint-disable-line no-console
     }
 
     this.authenticating = true;
-
-    const os = new Openstack(this.$store, this.credential);
-
-    os.password = this.password;
-
+    
+    const os = new Openstack(this.$store, this.credObj);
     this.os = os;
 
     // Fetch a token - if this succeeds, kick off async fetching the lists we need
@@ -130,9 +145,8 @@ export default {
     return {
       authenticating:      false,
       ready:               false,
+      credObj: {},
       os:                  null,
-      password:            null,
-      havePassword:        false,
       flavors:             initOptions(),
       images:              initOptions(),
       keyPairs:            initOptions(),
