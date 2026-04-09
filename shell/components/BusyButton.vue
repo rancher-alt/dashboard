@@ -1,5 +1,6 @@
 <script>
 export default {
+  emits: ['clicked'],
   props: {
     /**
      * Mode maps to keys in asyncButton.* translations

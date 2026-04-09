@@ -9,6 +9,7 @@ import { Openstack } from '@shell/utils/openstack.ts';
 import { Checkbox } from '@components/Form/Checkbox';
 
 export default {
+  emits:      ['validationChanged'],
   components: {
     Banner,
     BusyButton,
@@ -70,16 +71,18 @@ export default {
     regionOptions() {
       const sorted = (this.regions || []).sort((a, b) => a.id.localeCompare(b.id));
 
-      let regs = sorted.map((p) => {
+      const regs = sorted.map((p) => {
         return {
           label: p.id,
           value: p.id
         };
       });
+
       regs.push({
         label: 'None',
         value: ''
       });
+
       return regs;
     },
 
@@ -96,6 +99,7 @@ export default {
           !!this.value?.decodedData?.applicationCredentialId &&
           !!this.value?.decodedData?.applicationCredentialSecret;
       }
+
       return !!this.value?.decodedData?.authUrl &&
         !!this.value?.decodedData?.domainName &&
         !!this.value?.decodedData?.username &&
@@ -115,7 +119,7 @@ export default {
 
       this.value.annotations['openstack.cattle.io/useAppCred'] = this.value.decodedData.useAppCred;
 
-      const project = this.projects.find(p => p.id === this.project);
+      const project = this.projects.find((p) => p.id === this.project);
 
       if (project) {
         this.value.setData('tenantName', project.name);
@@ -183,13 +187,13 @@ export default {
       }
 
       const os = new Openstack(this.$store, {
-        endpoint:   this.value.decodedData.authUrl, 
-        domainName: this.value.decodedData.domainName,
-        username:   this.value.decodedData.username,
-        password:   this.value.decodedData.password,
-        appCredId: this.value.decodedData.applicationCredentialId,
+        endpoint:      this.value.decodedData.authUrl,
+        domainName:    this.value.decodedData.domainName,
+        username:      this.value.decodedData.username,
+        password:      this.value.decodedData.password,
+        appCredId:     this.value.decodedData.applicationCredentialId,
         appCredSecret: this.value.decodedData.applicationCredentialSecret,
-        useAppCred: this.value.decodedData.useAppCred,
+        useAppCred:    this.value.decodedData.useAppCred,
       });
 
       this.allowBusy = false;
@@ -235,13 +239,13 @@ export default {
         } else {
           // Could not list regions, so infer them from the project
           const prj = this.projectOptions[0].value;
-          const project = this.projects.find(p => p.id === prj);
+          const project = this.projects.find((p) => p.id === prj);
 
           if (project) {
             const osRegions = new Openstack(this.$store, {
               ...os,
-              projectName: project.name,
-              projectId: project.id,
+              projectName:       project.name,
+              projectId:         project.id,
               projectDomainName: project.domain_id
             });
 
@@ -292,19 +296,19 @@ export default {
         />
       </div>
     </div>
-     <div class="row">
+    <div class="row">
       <div class="col span-6">
-       <Checkbox
-        :mode="mode"
-        class="mt-20"
-        :value="value.decodedData.useAppCred"
-        label-key="cluster.credential.openstack.auth.fields.useAppCred"
-         :disabled="step !== 1"
-        @update:value="value.setData('useAppCred', $event);"
-      />
+        <Checkbox
+          :mode="mode"
+          class="mt-20"
+          :value="value.decodedData.useAppCred"
+          label-key="cluster.credential.openstack.auth.fields.useAppCred"
+          :disabled="step !== 1"
+          @update:value="value.setData('useAppCred', $event);"
+        />
       </div>
     </div>
-   <div class="row">
+    <div class="row">
       <div class="col span-6">
         <LabeledInput
           v-if="!value.decodedData.useAppCred"
@@ -330,7 +334,7 @@ export default {
           :mode="mode"
           @update:value="value.setData('password', $event);"
         />
-      </div> 
+      </div>
     </div>
     <div class="row">
       <div class="col span-6">
@@ -345,7 +349,7 @@ export default {
           :mode="mode"
           @update:value="value.setData('applicationCredentialId', $event);"
         />
-      </div> 
+      </div>
       <div class="col span-6">
         <LabeledInput
           v-if="value.decodedData.useAppCred"
@@ -358,7 +362,7 @@ export default {
           :mode="mode"
           @update:value="value.setData('applicationCredentialSecret', $event);"
         />
-      </div> 
+      </div>
     </div>
     <BusyButton
       ref="connect"
