@@ -14,6 +14,9 @@ export class Openstack {
   public projectName: string = '';
   public username: string = '';
   public password: string = '';
+  public useAppCred: boolean = false;
+  public appCredId: string = '';
+  public appCredSecret: string = '';
   public token: string = '';
   public region: string = '';
   private catalog: any;
@@ -47,17 +50,17 @@ export class Openstack {
 
   public async getToken() {
     const endpoint = this.endpoint.replace(/^https?:\/\//, '');
-    const baseUrl = `/meta/proxy/${ endpoint }`;
-    const url = `${ baseUrl }/auth/tokens`;
+    const baseUrl = `/meta/proxy/${endpoint}`;
+    const url = `${baseUrl}/auth/tokens`;
 
-    const data = {
+    let data = {
       auth: {
         identity: {
-          methods:  ['password'],
+          methods: ['password'],
           password: {
             user: {
-              name:     this.username,
-              domain:   { name: this.domainName },
+              name: this.username,
+              domain: { name: this.domainName },
               password: this.password
             }
           }
@@ -65,10 +68,24 @@ export class Openstack {
       }
     };
 
-    if (this.projectName) {
+    if (this.useAppCred) {
+      data = {
+        auth: {
+          identity: {
+            methods: ['application_credential'],
+            application_credential: {
+              id: this.appCredId,
+              secret: this.appCredSecret
+            }
+          }
+        }
+      }
+    }
+
+    if (!this.useAppCred && this.projectName) {
       (data as any).auth.scope = {
         project: {
-          name:   this.projectName,
+          name: this.projectName,
           domain: { name: this.projectDomainName }
         }
       };
@@ -80,7 +97,7 @@ export class Openstack {
       const res = await this.$dispatch('management/request', {
         url,
         headers,
-        method:               'POST',
+        method: 'POST',
         redirectUnauthorized: false,
         data
       }, { root: true });
@@ -97,7 +114,7 @@ export class Openstack {
 
       this.regionsFromCatalog = [];
 
-      if ((data as any).auth.scope && res?.token) {
+      if (((!this.useAppCred && (data as any).auth.scope) || this.useAppCred) && res?.token) {
         this.catalog = res.token.catalog;
         this.endpoints = {};
         this.catalog.forEach((service: any) => {
@@ -172,7 +189,6 @@ export class Openstack {
     value.enabled = true;
     value.selected = '';
 
-    console.log(api);
     const res = await this.makeComputeRequest(api);
 
     if (res && (res as any)[field]) {
@@ -206,19 +222,19 @@ export class Openstack {
 
   public async makeComputeRequest(api: string) {
     const endpoint = this.endpoints['compute'].replace(/^https?:\/\//, '');
-    const baseUrl = `/meta/proxy/${ endpoint }`;
-    const url = `${ baseUrl }${ api }`;
+    const baseUrl = `/meta/proxy/${endpoint}`;
+    const url = `${baseUrl}${api}`;
 
     const headers = {
-      Accept:         'application/json',
+      Accept: 'application/json',
       'X-Auth-Token': this.token
     };
 
     try {
+      url,
       const res = await this.$dispatch('management/request', {
-        url,
         headers,
-        method:               'GET',
+        method: 'GET',
         redirectUnauthorized: false,
       }, { root: true });
 
@@ -230,18 +246,18 @@ export class Openstack {
 
   public async getProjects() {
     const endpoint = this.endpoint.replace(/^https?:\/\//, '');
-    const baseUrl = `/meta/proxy/${ endpoint }`;
+    const baseUrl = `/meta/proxy/${endpoint}`;
 
     const headers = {
-      Accept:         'application/json',
+      Accept: 'application/json',
       'X-Auth-Token': this.token
     };
 
     try {
       const res = await this.$dispatch('management/request', {
-        url:                  `${ baseUrl }/users/${ this.userId }/projects`,
+        url: `${baseUrl}/users/${this.userId}/projects`,
         headers,
-        method:               'GET',
+        method: 'GET',
         redirectUnauthorized: false,
       }, { root: true });
 
@@ -255,18 +271,18 @@ export class Openstack {
 
   public async getRegions() {
     const endpoint = this.endpoint.replace(/^https?:\/\//, '');
-    const baseUrl = `/meta/proxy/${ endpoint }`;
+    const baseUrl = `/meta/proxy/${endpoint}`;
 
     const headers = {
-      Accept:         'application/json',
+      Accept: 'application/json',
       'X-Auth-Token': this.token
     };
 
     try {
       const res = await this.$dispatch('management/request', {
-        url:                  `${ baseUrl }/regions`,
+        url: `${baseUrl}/regions`,
         headers,
-        method:               'GET',
+        method: 'GET',
         redirectUnauthorized: false,
       }, { root: true });
 
@@ -276,7 +292,7 @@ export class Openstack {
 
       return { error: e };
     }
-  }  
+  }
 
   private convertToOptions(list: any) {
     const sorted = (list || []).sort((a: any, b: any) => a.name.localeCompare(b.name));

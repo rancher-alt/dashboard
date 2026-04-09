@@ -6,11 +6,13 @@ import { parse as parseUrl } from '@shell/utils/url';
 import { _CREATE } from '@shell/config/query-params';
 import BusyButton from '@shell/components/BusyButton.vue';
 import { Openstack } from '@shell/utils/openstack.ts';
+import { Checkbox } from '@components/Form/Checkbox';
 
 export default {
   components: {
     Banner,
     BusyButton,
+    Checkbox,
     LabeledInput,
     LabeledSelect,
   },
@@ -36,9 +38,7 @@ export default {
 
   data() {
     if (this.mode !== _CREATE) {
-      this.value.decodedData.username = this.value.annotations['openstack.cattle.io/username'];
-      this.value.decodedData.domainName = this.value.annotations['openstack.cattle.io/domainName'];
-      this.value.decodedData.endpoint = this.value.annotations['openstack.cattle.io/endpoint'];
+      this.value.decodedData.useAppCred = this.value.annotations['openstack.cattle.io/useAppCred'] === 'true';
     }
 
     return {
@@ -70,22 +70,33 @@ export default {
     regionOptions() {
       const sorted = (this.regions || []).sort((a, b) => a.id.localeCompare(b.id));
 
-      return sorted.map((p) => {
+      let regs = sorted.map((p) => {
         return {
           label: p.id,
           value: p.id
         };
       });
+      regs.push({
+        label: 'None',
+        value: ''
+      });
+      return regs;
     },
 
     hostname() {
-      const u = parseUrl(this.value.decodedData.endpoint);
+      const u = parseUrl(this.value.decodedData.authUrl);
 
       return u?.host || '';
     },
 
     canAuthenticate() {
-      return !!this.value?.decodedData?.endpoint &&
+      if (this.value?.decodedData?.useAppCred) {
+        return !!this.value?.decodedData?.authUrl &&
+          !!this.value?.decodedData?.domainName &&
+          !!this.value?.decodedData?.applicationCredentialId &&
+          !!this.value?.decodedData?.applicationCredentialSecret;
+      }
+      return !!this.value?.decodedData?.authUrl &&
         !!this.value?.decodedData?.domainName &&
         !!this.value?.decodedData?.username &&
         !!this.value?.decodedData?.password;
@@ -102,26 +113,21 @@ export default {
       // In the cluster creation flow, annotations is not set, so ensure it is set first
       this.value.annotations = this.value.annotations || {};
 
-      this.value.annotations['openstack.cattle.io/username'] = this.value.decodedData.username;
-      this.value.annotations['openstack.cattle.io/domainName'] = this.value.decodedData.domainName;
-      this.value.annotations['openstack.cattle.io/endpoint'] = this.value.decodedData.endpoint;
+      this.value.annotations['openstack.cattle.io/useAppCred'] = this.value.decodedData.useAppCred;
 
       const project = this.projects.find(p => p.id === this.project);
 
       if (project) {
-        this.value.annotations['openstack.cattle.io/projectName'] = project.name;
-        this.value.annotations['openstack.cattle.io/projectId'] = project.id;
-        this.value.annotations['openstack.cattle.io/projectDomainName'] = project.domain_id;
+        this.value.setData('tenantName', project.name);
+        this.value.setData('tenantDomainName', project.domain_id);
       }
 
-      if (this.region) {
-        this.value.annotations['openstack.cattle.io/region'] = this.region;
-      }
+      this.value.setData('region', this.region);
 
       return true;
     },
 
-    // When the user clicked 'Edit Auth Config', clear the projects and set the step back to 1
+    // when the user clicked 'edit auth config', clear the projects and set the step back to 1
     // so the user can modify the credentials needed to fetch the projects
     clear() {
       this.step = 1;
@@ -137,7 +143,7 @@ export default {
         return false;
       }
 
-      const u = parseUrl(this.value.decodedData.endpoint);
+      const u = parseUrl(this.value.decodedData.authUrl);
 
       if (!u.host) {
         return true;
@@ -148,7 +154,7 @@ export default {
 
     async addHostToAllowList() {
       this.allowBusy = true;
-      const u = parseUrl(this.value.decodedData.endpoint);
+      const u = parseUrl(this.value.decodedData.authUrl);
 
       this.driver.whitelistDomains = this.driver.whitelistDomains || [];
 
@@ -172,15 +178,18 @@ export default {
 
       let okay = false;
 
-      if (!this.value.decodedData.endpoint) {
+      if (!this.value.decodedData.authUrl) {
         return cb(okay);
       }
 
       const os = new Openstack(this.$store, {
-        endpoint:   this.value.decodedData.endpoint,
+        endpoint:   this.value.decodedData.authUrl, 
         domainName: this.value.decodedData.domainName,
         username:   this.value.decodedData.username,
         password:   this.value.decodedData.password,
+        appCredId: this.value.decodedData.applicationCredentialId,
+        appCredSecret: this.value.decodedData.applicationCredentialSecret,
+        useAppCred: this.value.decodedData.useAppCred,
       });
 
       this.allowBusy = false;
@@ -262,13 +271,13 @@ export default {
     <div class="row">
       <div class="col span-6">
         <LabeledInput
-          :value="value.decodedData.endpoint"
+          :value="value.decodedData.authUrl"
           :disabled="step !== 1"
           label-key="cluster.credential.openstack.auth.fields.endpoint"
           placeholder-key="cluster.credential.openstack.auth.placeholders.endpoint"
           type="text"
           :mode="mode"
-          @update:value="value.setData('endpoint', $event);"
+          @update:value="value.setData('authUrl', $event);"
         />
       </div>
       <div class="col span-6">
@@ -283,9 +292,22 @@ export default {
         />
       </div>
     </div>
-    <div class="row">
+     <div class="row">
+      <div class="col span-6">
+       <Checkbox
+        :mode="mode"
+        class="mt-20"
+        :value="value.decodedData.useAppCred"
+        label-key="cluster.credential.openstack.auth.fields.useAppCred"
+         :disabled="step !== 1"
+        @update:value="value.setData('useAppCred', $event);"
+      />
+      </div>
+    </div>
+   <div class="row">
       <div class="col span-6">
         <LabeledInput
+          v-if="!value.decodedData.useAppCred"
           :value="value.decodedData.username"
           :disabled="step !== 1"
           class="mt-20"
@@ -298,6 +320,7 @@ export default {
       </div>
       <div class="col span-6">
         <LabeledInput
+          v-if="!value.decodedData.useAppCred"
           :value="value.decodedData.password"
           :disabled="step !== 1"
           class="mt-20"
@@ -307,9 +330,36 @@ export default {
           :mode="mode"
           @update:value="value.setData('password', $event);"
         />
-      </div>
+      </div> 
     </div>
-
+    <div class="row">
+      <div class="col span-6">
+        <LabeledInput
+          v-if="value.decodedData.useAppCred"
+          :value="value.decodedData.applicationCredentialId"
+          :disabled="step !== 1"
+          class="mt-20"
+          label-key="cluster.credential.openstack.auth.fields.appCredId"
+          placeholder-key="cluster.credential.openstack.auth.placeholders.appCredId"
+          type="text"
+          :mode="mode"
+          @update:value="value.setData('applicationCredentialId', $event);"
+        />
+      </div> 
+      <div class="col span-6">
+        <LabeledInput
+          v-if="value.decodedData.useAppCred"
+          :value="value.decodedData.applicationCredentialSecret"
+          :disabled="step !== 1"
+          class="mt-20"
+          label-key="cluster.credential.openstack.auth.fields.appCredSecret"
+          placeholder-key="cluster.credential.openstack.auth.placeholders.appCredSecret"
+          type="password"
+          :mode="mode"
+          @update:value="value.setData('applicationCredentialSecret', $event);"
+        />
+      </div> 
+    </div>
     <BusyButton
       ref="connect"
       label-key="cluster.credential.openstack.auth.actions.authenticate"
