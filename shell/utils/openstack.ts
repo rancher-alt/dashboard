@@ -231,8 +231,8 @@ export class Openstack {
     };
 
     try {
-      url,
       const res = await this.$dispatch('management/request', {
+        url,
         headers,
         method: 'GET',
         redirectUnauthorized: false,
