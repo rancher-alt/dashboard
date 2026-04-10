@@ -19,9 +19,11 @@ env:
 
 jobs:
   build-and-upload-hosted:
-    if: ${{ github.repository_owner == 'rancher' }}
-    name: Build & Upload Hosted
+    if: ${{ github.repository_owner == 'rancher-alt' }}
+    name: Build & Release Hosted
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
@@ -38,37 +40,23 @@ jobs:
         name: Build Hosted
         run: ./scripts/build-hosted
 
-      - id: upload-gate
-        name: Upload Gate (superceded by a newer build?)
-        run: ./scripts/build-upload-gate
+      - name: Archive build output
+        run: |
+          tar -czf hosted-build.tar.gz -C ${{ steps.build-hosted.outputs.BUILD_HOSTED_DIR }} .
 
-      - name: Get gcs auth
-        uses: rancher-eio/read-vault-secrets@7282bf97898cd1c16c89f837e0bb442e6d384c89 # v3
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          secrets: |
-            secret/data/github/repo/${{ github.repository }}/google-auth/rancher/credentials token | GOOGLE_AUTH
-
-      - name: Apply gcs auth
-        # https://github.com/google-github-actions/auth
-        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
-        with:
-          credentials_json: "${{ env.GOOGLE_AUTH }}"
-
-      - name: Upload build
-        uses: google-github-actions/upload-cloud-storage@6397bd7208e18d13ba2619ee21b9873edc94427a # v3
-        # https://github.com/google-github-actions/upload-cloud-storage
-        with:
-          path: ${{steps.build-hosted.outputs.BUILD_HOSTED_DIR}}
-          # Example - https://releases.rancher.com/ui/2.8.0/...
-          destination: releases.rancher.com/${{ env.REPO }}/${{ steps.build-hosted.outputs.BUILD_HOSTED_LOCATION }}
-          parent: false
-          headers: |-
-            cache-control: no-cache,must-revalidate
-          process_gcloudignore: false
+          tag_name: ${{ env.CI_BUILD_TAG || env.CI_BRANCH }}
+          name: ${{ env.CI_BUILD_TAG || env.CI_BRANCH }}
+          files: hosted-build.tar.gz
+          generate_release_notes: true
 
   build-and-upload-embedded:
-    name: Build & Upload Embedded
+    name: Build & Release Embedded
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
@@ -85,26 +73,10 @@ jobs:
         name: Build Embedded
         run: ./scripts/build-embedded
 
-      - name: Get gcs auth
-        uses: rancher-eio/read-vault-secrets@7282bf97898cd1c16c89f837e0bb442e6d384c89 # v3
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          secrets: |
-            secret/data/github/repo/${{ github.repository }}/google-auth/rancher/credentials token | GOOGLE_AUTH
-
-      - name: Apply gcs auth
-        # https://github.com/google-github-actions/auth
-        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
-        with:
-          credentials_json: "${{ env.GOOGLE_AUTH }}"
-
-      - name: Upload tar
-        uses: google-github-actions/upload-cloud-storage@6397bd7208e18d13ba2619ee21b9873edc94427a # v3'
-        with:
-          path: ${{steps.build-embedded.outputs.BUILD_EMBEDED_TGZ}}
-          # Example - https://releases.rancher.com/ui/2.8.0.tar.gz
-          destination: releases.rancher.com/${{ env.REPO }}
-          parent: false
-          headers: |-
-            cache-control: no-cache,must-revalidate
-          process_gcloudignore: false
-  
+          tag_name: ${{ env.CI_BUILD_TAG || env.CI_BRANCH }}
+          name: ${{ env.CI_BUILD_TAG || env.CI_BRANCH }}
+          files: ${{ steps.build-embedded.outputs.BUILD_EMBEDED_TGZ }}
+          generate_release_notes: true

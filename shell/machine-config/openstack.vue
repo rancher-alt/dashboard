@@ -136,7 +136,13 @@ export default {
       os.getImages(this.images, this.value?.imageName);
       os.getKeyPairs(this.keyPairs, this.value?.keypairName);
       os.getSecurityGroups(this.securityGroups, this.value?.secGroups);
-      os.getFloatingIpPools(this.floatingIpPools, this.value?.floatingipPool);
+      os.getFloatingIpPools(this.floatingIpPools, this.value?.floatingipPool).then(() => {
+        this.addEmptyFloatingIpPoolOption();
+
+        if (!this.value?.floatingipPool) {
+          this.floatingIpPools.selected = null;
+        }
+      });
       os.getNetworkNames(this.networks, this.value?.netName);
       os.getAvailabilityZones(this.availabilityZones, this.value?.availabilityZone);
     });
@@ -174,12 +180,25 @@ export default {
   methods: {
     stringify,
 
+    addEmptyFloatingIpPoolOption() {
+      const hasEmptyOption = this.floatingIpPools.options.some((option) => option.value === null);
+
+      if (!hasEmptyOption) {
+        this.floatingIpPools.options = [{
+          label: 'None',
+          value: null,
+        }, ...this.floatingIpPools.options];
+      }
+    },
+
     initForViewMode() {
       this.fakeSelectOptions(this.flavors, this.value?.flavorName);
       this.fakeSelectOptions(this.images, this.value?.imageName);
       this.fakeSelectOptions(this.keyPairs, this.value?.keypairName);
       this.fakeSelectOptions(this.securityGroups, this.value?.secGroups);
       this.fakeSelectOptions(this.floatingIpPools, this.value?.floatingipPool);
+      this.addEmptyFloatingIpPoolOption();
+      this.floatingIpPools.selected = this.value?.floatingipPool ? this.floatingIpPools.selected : null;
       this.fakeSelectOptions(this.networks, this.value?.netName);
       this.fakeSelectOptions(this.availabilityZones, this.value?.availabilityZone);
     },
@@ -224,7 +243,7 @@ export default {
       this.value.availabilityZone = this.availabilityZones.selected?.name;
       this.value.flavorName = this.flavors.selected?.name;
       this.value.imageName = this.images.selected?.name;
-      this.value.floatingipPool = this.floatingIpPools.selected?.name;
+      this.value.floatingipPool = this.floatingIpPools.selected?.name || '';
       this.value.keypairName = this.keyPairs.selected?.name;
       this.value.netName = this.networks.selected?.name;
       this.value.secGroups = this.securityGroups.selected?.name;
@@ -361,6 +380,16 @@ export default {
         </div>
       </div>
       <div class="row mt-10">
+         <div class="col span-6">
+          <LabeledSelect
+            v-model:value="networks.selected"
+            label="Networks"
+            :options="networks.options"
+            :disabled="!networks.enabled || busy"
+            :loading="networks.busy"
+            :searchable="false"
+          />
+        </div>
         <div class="col span-6">
           <LabeledSelect
             v-model:value="floatingIpPools.selected"
@@ -371,17 +400,7 @@ export default {
             :searchable="false"
           />
         </div>
-        <div class="col span-6">
-          <LabeledSelect
-            v-model:value="networks.selected"
-            label="Networks"
-            :options="networks.options"
-            :disabled="!networks.enabled || busy"
-            :loading="networks.busy"
-            :searchable="false"
-          />
-        </div>
-      </div>
+     </div>
       <div class="row mt-10">
         <div class="col span-6">
           <LabeledInput
