@@ -380,7 +380,7 @@ export default {
         </div>
       </div>
       <div class="row mt-10">
-         <div class="col span-6">
+        <div class="col span-6">
           <LabeledSelect
             v-model:value="networks.selected"
             label="Networks"
@@ -400,7 +400,7 @@ export default {
             :searchable="false"
           />
         </div>
-     </div>
+      </div>
       <div class="row mt-10">
         <div class="col span-6">
           <LabeledInput
