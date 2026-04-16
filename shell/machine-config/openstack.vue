@@ -144,7 +144,13 @@ export default {
         }
       });
       os.getNetworkNames(this.networks, this.value?.netName);
-      os.getAvailabilityZones(this.availabilityZones, this.value?.availabilityZone);
+      os.getAvailabilityZones(this.availabilityZones, this.value?.availabilityZone).then(() => {
+        this.addEmptyAvailabilityZoneOption();
+
+        if (!this.value?.availabilityZone) {
+          this.availabilityZones.selected = null;
+        }
+      });
     });
 
     this.$emit('validationChanged', false);
@@ -192,6 +198,17 @@ export default {
       }
     },
 
+    addEmptyAvailabilityZoneOption() {
+      const hasEmptyOption = this.availabilityZones.options.some((option) => option.value === null);
+
+      if (!hasEmptyOption) {
+        this.availabilityZones.options = [{
+          label: 'None',
+          value: null,
+        }, ...this.availabilityZones.options];
+      }
+    },
+
     initForViewMode() {
       this.fakeSelectOptions(this.flavors, this.value?.flavorName);
       this.fakeSelectOptions(this.images, this.value?.imageName);
@@ -202,6 +219,8 @@ export default {
       this.floatingIpPools.selected = this.value?.floatingipPool ? this.floatingIpPools.selected : null;
       this.fakeSelectOptions(this.networks, this.value?.netName);
       this.fakeSelectOptions(this.availabilityZones, this.value?.availabilityZone);
+      this.addEmptyAvailabilityZoneOption();
+      this.availabilityZones.selected = this.value?.availabilityZone ? this.availabilityZones.selected : null;
     },
 
     fakeSelectOptions(list, value) {
@@ -241,7 +260,7 @@ export default {
       this.value.userDomainName = this.os.domainName;
       this.value.tenantId = this.os.projectId;
       this.value.tenantName = this.os.projectName;
-      this.value.availabilityZone = this.availabilityZones.selected?.name;
+      this.value.availabilityZone = this.availabilityZones.selected?.name || '';
       this.value.flavorName = this.flavors.selected?.name;
       this.value.imageName = this.images.selected?.name;
       this.value.volumeSize = this.volumeSize;
