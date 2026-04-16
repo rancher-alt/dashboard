@@ -164,7 +164,7 @@ export default {
       os:                  null,
       flavors:             initOptions(),
       images:              initOptions(),
-      volumeSize:          this.value?.volumeSize || 0,
+      volumeSize:          this.value?.volumeSize || '0',
       keyPairs:            initOptions(),
       securityGroups:      initOptions(),
       floatingIpPools:     initOptions(),
