@@ -158,6 +158,7 @@ export default {
       os:                  null,
       flavors:             initOptions(),
       images:              initOptions(),
+      volumeSize:          this.value?.volumeSize || 0,
       keyPairs:            initOptions(),
       securityGroups:      initOptions(),
       floatingIpPools:     initOptions(),
@@ -243,6 +244,7 @@ export default {
       this.value.availabilityZone = this.availabilityZones.selected?.name;
       this.value.flavorName = this.flavors.selected?.name;
       this.value.imageName = this.images.selected?.name;
+      this.value.volumeSize = this.volumeSize;
       this.value.floatingipPool = this.floatingIpPools.selected?.name || '';
       this.value.keypairName = this.keyPairs.selected?.name;
       this.value.netName = this.networks.selected?.name;
@@ -317,6 +319,16 @@ export default {
             :disabled="!images.enabled || busy"
             :loading="images.busy"
             :searchable="false"
+          />
+        </div>
+      </div>
+      <div class="row mt-10">
+        <div class="col span-6">
+          <LabeledInput
+            v-model:value="volumeSize"
+            :mode="mode"
+            :disabled="busy"
+            label="Additional Volume Size"
           />
         </div>
       </div>
