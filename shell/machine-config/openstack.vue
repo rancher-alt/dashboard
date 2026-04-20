@@ -7,7 +7,6 @@ import { LabeledInput } from '@components/Form/LabeledInput';
 import { NORMAN, SECRET } from '@shell/config/types';
 import { stringify } from '@shell/utils/error';
 import { _VIEW } from '@shell/config/query-params';
-import FileSelector from '@shell/components/FileSelector';
 import { Openstack } from '@shell/utils/openstack.ts';
 
 function initOptions() {
@@ -22,7 +21,7 @@ function initOptions() {
 export default {
   emits:      ['validationChanged'],
   components: {
-    Banner, FileSelector, Loading, LabeledInput, LabeledSelect
+    Banner, Loading, LabeledInput, LabeledSelect
   },
 
   mixins: [CreateEditView],
@@ -96,6 +95,7 @@ export default {
       const tenantName = atob(secret.data['openstackcredentialConfig-tenantName']);
       const tenantDomainName = atob(secret.data['openstackcredentialConfig-tenantDomainName']);
 
+      this.privateKeyFile = atob(secret.data['openstackcredentialConfig-privateKeyFile']);
       this.credObj = {
         endpoint:          authUrl,
         domainName,
@@ -153,28 +153,26 @@ export default {
       });
     });
 
-    this.$emit('validationChanged', false);
+    this.$emit('validationChanged', true);
   },
 
   data() {
     return {
-      authenticating:      false,
-      ready:               false,
-      credObj:             {},
-      os:                  null,
-      flavors:             initOptions(),
-      images:              initOptions(),
-      volumeSize:          this.value?.volumeSize || '0',
-      keyPairs:            initOptions(),
-      securityGroups:      initOptions(),
-      floatingIpPools:     initOptions(),
-      networks:            initOptions(),
-      availabilityZones:   initOptions(),
-      sshUser:             this.value?.sshUser || 'root',
-      privateKeyFile:      this.value?.privateKeyFile || '',
-      filename:            this.value?.privateKeyFile ? 'Private Key Provided' : '',
-      privateKeyFieldType: 'password',
-      errors:              null,
+      authenticating:    false,
+      ready:             false,
+      credObj:           {},
+      os:                null,
+      flavors:           initOptions(),
+      images:            initOptions(),
+      volumeSize:        this.value?.volumeSize || '0',
+      keyPairs:          initOptions(),
+      securityGroups:    initOptions(),
+      floatingIpPools:   initOptions(),
+      networks:          initOptions(),
+      availabilityZones: initOptions(),
+      sshUser:           this.value?.sshUser || 'root',
+      errors:            null,
+      privateKeyFile:    this.value?.privateKeyFile || null,
     };
   },
 
@@ -238,17 +236,6 @@ export default {
       list.selected = value;
     },
 
-    onPrivateKeyFileSelected(v) {
-      this.filename = v.file.name;
-      this.privateKeyFile = v.data;
-
-      // On initial load, filename is shown as a password as we don't know what the filename was that was used - we just want to indicate there is a vlue
-      // When a file is chosen, change the type to text, so that the user can see the filename of the file that they chose
-      this.privateKeyFieldType = 'text';
-
-      this.$emit('validationChanged', true);
-    },
-
     syncValue() {
       // Note: We don't need to provide password as this is picked up via the credential
 
@@ -269,8 +256,8 @@ export default {
       this.value.netName = this.networks.selected?.name;
       this.value.secGroups = this.securityGroups.selected?.name;
       this.value.sshUser = this.sshUser;
-      this.value.privateKeyFile = this.privateKeyFile;
       this.value.region = this.os.region;
+      this.value.privateKeyFile = this.privateKeyFile;
 
       // Not configurable
       this.value.endpointType = 'publicURL';
@@ -355,7 +342,7 @@ export default {
         <div class="col span-6">
           <LabeledSelect
             v-model:value="keyPairs.selected"
-            label="Key Pair"
+            label="SSH Key Pair"
             :options="keyPairs.options"
             :disabled="!keyPairs.enabled || busy"
             :loading="keyPairs.busy"
@@ -364,26 +351,12 @@ export default {
         </div>
         <div class="col span-6">
           <LabeledInput
-            v-model:value="filename"
-            label="Private Key"
+            v-model:value="sshUser"
             :mode="mode"
-            :type="privateKeyFieldType"
             :disabled="busy"
             :required="true"
-          >
-            <template v-slot:suffix>
-              <div class="file-button">
-                <FileSelector
-                  label="..."
-                  :mode="mode"
-                  :include-file="true"
-                  :disabled="busy"
-                  class="btn-sm"
-                  @selected="onPrivateKeyFileSelected"
-                />
-              </div>
-            </template>
-          </LabeledInput>
+            label="SSH User ID"
+          />
         </div>
       </div>
       <div class="row mt-10">
@@ -429,17 +402,6 @@ export default {
             :disabled="!floatingIpPools.enabled || busy"
             :loading="floatingIpPools.busy"
             :searchable="false"
-          />
-        </div>
-      </div>
-      <div class="row mt-10">
-        <div class="col span-6">
-          <LabeledInput
-            v-model:value="sshUser"
-            :mode="mode"
-            :disabled="busy"
-            :required="true"
-            label="SSH User ID"
           />
         </div>
       </div>

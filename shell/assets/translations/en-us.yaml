@@ -1688,6 +1688,7 @@ cluster:
           username: Username
           appCredId: Application Credential ID
           appCredSecret: Application Credential Secret
+          privateKeyFile: SSH Private Key
           useAppCred: Use Application Credential
           domainName: Domain Name
           endpoint: Openstack Authentication URL
@@ -1698,6 +1699,7 @@ cluster:
           username: ($OS_USERNAME)
           appCredId: ($OS_APPLICATION_CREDENTIAL_ID)
           appCredSecret: ($OS_APPLICATION_CREDENTIAL_SECRET)
+          privateKeyFile: ($OS_PRIVATE_KEY_FILE)
           domainName: ($OS_USER_DOMAIN_NAME)
           endpoint: e.g. https://server:5000/v3 ($OS_AUTH_URL)
         errors:
