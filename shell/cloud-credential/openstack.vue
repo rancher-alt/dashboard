@@ -7,6 +7,7 @@ import { _CREATE } from '@shell/config/query-params';
 import BusyButton from '@shell/components/BusyButton.vue';
 import { Openstack } from '@shell/utils/openstack.ts';
 import { Checkbox } from '@components/Form/Checkbox';
+import FileSelector from '@shell/components/FileSelector';
 
 export default {
   emits:      ['validationChanged'],
@@ -16,6 +17,7 @@ export default {
     Checkbox,
     LabeledInput,
     LabeledSelect,
+    FileSelector
   },
 
   props: {
@@ -53,6 +55,8 @@ export default {
       driver:         {},
       allowBusy:      false,
       error:          '',
+      filename:       '',
+      privateKeyFile: null,
     };
   },
 
@@ -78,7 +82,7 @@ export default {
         };
       });
 
-      regs.push({
+      regs.unshift({
         label: 'None',
         value: ''
       });
@@ -174,6 +178,12 @@ export default {
         console.error('Could not update driver', e); // eslint-disable-line no-console
         this.allowBusy = false;
       }
+    },
+
+    async onPrivateKeyFileSelected(v) {
+      this.value.setData('privateKeyFile', v.data);
+
+      this.$emit('validationChanged', true);
     },
 
     async connect(cb) {
@@ -332,6 +342,7 @@ export default {
           placeholder-key="cluster.credential.openstack.auth.placeholders.password"
           type="password"
           :mode="mode"
+          :required="!value.decodedData.useAppCred"
           @update:value="value.setData('password', $event);"
         />
       </div>
@@ -360,8 +371,36 @@ export default {
           placeholder-key="cluster.credential.openstack.auth.placeholders.appCredSecret"
           type="password"
           :mode="mode"
+          :required="value.decodedData.useAppCred"
           @update:value="value.setData('applicationCredentialSecret', $event);"
         />
+      </div>
+    </div>
+    <div class="row">
+      <div class="col span-6">
+        <LabeledInput
+          :value="value.decodedData.privateKeyFile"
+          class="mt-20"
+          label-key="cluster.credential.openstack.auth.fields.privateKeyFile"
+          placeholder-key="cluster.credential.openstack.auth.placeholders.privateKeyFile"
+          :mode="mode"
+          type="password"
+          :disabled="busy"
+          :required="true"
+        >
+          <template v-slot:suffix>
+            <div class="file-button">
+              <FileSelector
+                label="..."
+                :mode="mode"
+                :include-file="true"
+                :disabled="busy"
+                class="btn-sm"
+                @selected="onPrivateKeyFileSelected"
+              />
+            </div>
+          </template>
+        </LabeledInput>
       </div>
     </div>
     <BusyButton
