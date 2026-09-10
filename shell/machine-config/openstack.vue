@@ -263,6 +263,7 @@ export default {
       this.value.endpointType = 'publicURL';
       this.value.insecure = true;
       this.value.bootFromVolume = false;
+      this.value.configDrive = true;
       this.value.sshPort = '22';
     },
 
